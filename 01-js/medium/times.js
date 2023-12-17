@@ -9,5 +9,19 @@ There is no automated test for this one, this is more for you to understand time
 */
 
 function calculateTime(n) {
-    return 0.01;
+  let beforeTime, afterTime
+  beforeTime = new Date().getTime()
+  for (let i = 0; i < n; i++) {}
+  afterTime = new Date().getTime()
+  console.log(
+    'For n = ',
+    n,
+    'It took ',
+    afterTime - beforeTime,
+    ' milliseconds to run the for loop'
+  )
 }
+
+calculateTime(100)
+calculateTime(100000)
+calculateTime(1000000000)
