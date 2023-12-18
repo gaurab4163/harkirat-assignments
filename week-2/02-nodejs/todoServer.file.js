@@ -41,83 +41,108 @@
  */
 const express = require('express')
 const bodyParser = require('body-parser')
+const fs = require('fs')
 
 const app = express()
 
 app.use(bodyParser.json())
 
-let uniqueID = 1
-let todos = [
-  // {
-  //   id: uniqueID++,
-  //   title: 'title1',
-  //   description: 'description1',
-  // },
-  // {
-  //   id: uniqueID++,
-  //   title: 'title2',
-  //   description: 'description2',
-  // },
-]
+let uniqueID = 3
 
 app.get('/todos', function (req, res) {
-  res.status(200).json(todos)
+  let readData
+  fs.readFile('todos.json', 'utf-8', function (err, data) {
+    if (err) throw err
+    res.status(200).json(JSON.parse(data))
+  })
 })
 
 // GET /todos/:id
 app.get('/todos/:id', function (req, res) {
-  let id = parseInt(req.params.id)
-  let todo = todos.forEach((todo) => {
-    if (todo.id === id) {
+  fs.readFile('todos.json', 'utf-8', function (err, data) {
+    if (err) throw err
+    let id = parseInt(req.params.id)
+    let parsedTodos = JSON.parse(data)
+    const todo = parsedTodos.find((todo) => {
+      return todo.id === id
+    })
+    if (todo) {
       res.status(200).json(todo)
+    } else {
+      res.status(404).json({
+        msg: '404 not found',
+      })
     }
-  })
-
-  res.status(404).json({
-    msg: '404 not found',
   })
 })
 
 // POST /todos
 app.post('/todos', function (req, res) {
-  todos.push({
-    id: uniqueID,
-    ...req.body,
-  })
-  res.status(201).json({
-    id: uniqueID++,
+  fs.readFile('todos.json', 'utf-8', function (err, data) {
+    if (err) throw err
+    let parsedData = JSON.parse(data)
+    parsedData.push({
+      id: uniqueID,
+      ...req.body,
+    })
+    fs.writeFile('todos.json', JSON.stringify(parsedData), function () {
+      console.log('data is written now to file')
+      res.status(201).json({
+        id: uniqueID++,
+      })
+    })
   })
 })
 
 /// PUT todos/:id
 app.put('/todos/:id', function (req, res) {
-  const index = todos.map((todo) => todo.id).indexOf(parseInt(req.params.id))
-  if (index === -1) {
-    res.status(404).send('404 not found')
-  } else {
-    todos[index] = {
-      id: parseInt(req.params.id),
-      ...req.body,
+  fs.readFile('todos.json', 'utf-8', function (err, data) {
+    if (err) throw err
+    const parsedData = JSON.parse(data)
+
+    const index = parsedData
+      .map((todo) => todo.id)
+      .indexOf(parseInt(req.params.id))
+    if (index === -1) {
+      res.status(404).send('404 not found')
+    } else {
+      parsedData[index] = {
+        id: parseInt(req.params.id),
+        ...req.body,
+      }
+      fs.writeFile(
+        'todos.json',
+        JSON.stringify(parsedData),
+        function (err, data) {
+          console.log('put operation is complete')
+          res.status(200).json(parsedData)
+        }
+      )
     }
-    res.status(200).json(todos)
-  }
+  })
 })
 
 // DELETE /todos/:id
 app.delete('/todos/:id', function (req, res) {
-  const id = parseInt(req.params.id)
-  const filteredTodos = todos.filter(function (todo) {
-    if (todo.id !== id) {
-      return true
+  fs.readFile('todos.json', 'utf-8', function (err, data) {
+    if (err) throw err
+    const id = parseInt(req.params.id)
+    let parsedData = JSON.parse(data)
+    const filteredTodos = parsedData.filter(function (todo) {
+      if (todo.id !== id) {
+        return true
+      }
+    })
+    // id not found
+    if (parsedData.length === filteredTodos.length) {
+      res.status(404).send('404 not found')
+    } else {
+      fs.writeFile('todos.json', JSON.stringify(filteredTodos), function () {
+        console.log('delete operation is complete')
+        res.status(200).json(filteredTodos)
+      })
     }
   })
-  // id not found
-  if (todos.length === filteredTodos.length) {
-    res.status(404).send('404 not found')
-  } else {
-    todos = filteredTodos
-    res.status(200).json(todos)
-  }
 })
 
 // app.listen(3000, () => {
